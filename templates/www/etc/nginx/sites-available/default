@@ -1,0 +1,55 @@
+server {
+  listen 80;
+  {% if ansible_host == "127.0.0.1" %}
+  server_name nathanwinther.local 127.0.0.1;
+  {% else %}
+  server_name {{ansible_host}};
+  {% endif %}
+
+  return 301 https://$server_name$request_uri;
+}
+
+server {
+  listen 443 ssl;
+  {% if ansible_host == "127.0.0.1" %}
+  server_name nathanwinther.local 127.0.0.1;
+  {% else %}
+  server_name {{ansible_host}};
+  {% endif %}
+
+  {% for item in ssl_certificates %}
+  {{item.key}} {{item.path}};
+  {% endfor %}
+
+	ssl_protocols TLSv1 TLSv1.1 TLSv1.2; # don’t use SSLv3 ref: POODLE
+	ssl_ciphers "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA:ECDHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES128-SHA256:DHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES256-GCM-SHA384:AES128-GCM-SHA256:AES256-SHA256:AES128-SHA256:AES256-SHA:AES128-SHA:DES-CBC3-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!MD5:!PSK:!RC4"; #Disables all weak ciphers
+
+  index index.html;
+
+	rewrite ^/about/?$ / permanent; 
+	rewrite ^/u/1$ http://www.flickr.com/photos/nathanw/3860424335/ permanent; 
+	rewrite ^/u/2$ http://en.wiktionary.org/wiki/choler permanent;
+	rewrite ^/u/3$ http://www.isthisyour.name/nathan_winther.htm permanent;
+	rewrite ^/u/4$ http://www.apple.com/trailers/independent/themenwhostareatgoats/ permanent;
+	rewrite ^/u/5$ http://firehouse12.com/events.asp?id=68591&seriesid=68590 permanent;
+	rewrite ^/u/6$ http://speedbird.wordpress.com/2009/09/22/responsibilization-and-user-experience/ permanent;
+	rewrite ^/u/7$ http://kunstler.com/blog/2009/09/reality-receding.html permanent;
+	rewrite ^/u/8$ http://www-tc.pbs.org/ktca/americanphotography/features/digital/oswald_big.jpg permanent;
+	rewrite ^/u/9$ http://www.reddit.com/r/programming/comments/abpdf/the_economist_asks_how_much_did_banking_it/c0gsnwh permanent;
+	rewrite ^/u/A$ http://www.nakedcapitalism.com/2010/01/obamas-get-tough-on-banks-again-tries-to-play-the-public-for-fools.html permanent;
+	rewrite ^/u/B$ http://www.nakedcapitalism.com/2010/01/obama-plans-to-talk-even-tougher.html permanent;
+	rewrite ^/u/C$ http://fluid.media.mit.edu/projects.php?action=details&id=79 permanent;
+	rewrite ^/u/D$ http://www.antipope.org/charlie/blog-static/2010/04/left-turn-clyde.html permanent;
+
+  root {{site.docroot}};
+
+  location / {
+		proxy_pass http://s3.nathanwinther.info.s3-website-us-east-1.amazonaws.com;
+  }
+
+  location /invoice {
+		proxy_pass http://127.0.0.1:3000;
+  }
+
+}
+

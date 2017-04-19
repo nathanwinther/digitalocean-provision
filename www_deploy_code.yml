@@ -1,0 +1,24 @@
+---
+
+- name: code
+
+  hosts: "{{playbook.hosts}}"
+  remote_user: "{{playbook.remote_user}}"
+  become: "{{playbook.become}}"
+  become_user: "{{playbook.become_user}}"
+  become_method: "{{playbook.become_method}}"
+
+  tasks:
+    - name: git
+      git:
+        repo: git@github.com:nathanwinther/go-invoice.git
+        dest: "{{invoice.git.dest}}"
+        accept_hostkey: yes
+        version: "{{invoice.git.version}}"
+
+    - name: build
+      command: ./build.sh --no-gulp chdir="{{invoice.root}}"
+
+    - name: start invoice service
+      command: /etc/init.d/invoice restart
+

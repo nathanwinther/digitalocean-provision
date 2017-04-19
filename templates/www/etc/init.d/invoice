@@ -1,0 +1,51 @@
+#!/bin/sh
+
+set -e
+
+{% for item in invoice.environment %}
+export {{item.key}}={{item.value}}
+{% endfor %}
+
+NAME={{invoice.name}}
+PIDFILE=/var/run/invoice.pid
+DAEMON={{invoice.root}}/bin/invoice
+DAEMON_OPTS="-start -root={{invoice.root}} -port={{invoice.port}}"
+
+case "${1}" in
+  start)
+    echo -n "Starting ${NAME}"
+    start-stop-daemon --start --quiet --background --pidfile ${PIDFILE} --make-pidfile --exec ${DAEMON} -- ${DAEMON_OPTS}
+    echo "."
+    ;;
+  stop)
+    echo -n "Stopping ${NAME}"
+    start-stop-daemon --stop --quiet --oknodo --pidfile ${PIDFILE} --remove-pidfile --exec ${DAEMON}
+    echo "."
+    ;;
+  restart)
+    echo -n "Restarting ${NAME}"
+    start-stop-daemon --stop --quiet --oknodo --pidfile ${PIDFILE} --remove-pidfile --exec ${DAEMON}
+    sleep 1
+    start-stop-daemon --start --quiet --background --pidfile ${PIDFILE} --make-pidfile --exec ${DAEMON} -- ${DAEMON_OPTS}
+    echo "."
+    ;;
+  status)
+    echo -n "Checking ${NAME}..."
+    if [ -f $PIDFILE ]; then
+      PID=`cat $PIDFILE`
+      if [ -z "`ps axf | grep ${PID} | grep -v grep`" ]; then
+        echo " Process dead but pidfile exists"
+        exit 1 
+      else
+        echo " Running"
+      fi
+    else
+      echo " Service not running"
+      exit 3 
+    fi
+    ;;
+  *)
+    echo "Usage: ${NAME} {start|stop|restart|status}" >&2
+    ;;
+esac
+

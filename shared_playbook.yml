@@ -1,0 +1,19 @@
+---
+
+- name: apt update
+  apt: update_cache=yes
+
+- name: users
+  user: name={{item.name}} state=present createhome=yes generate_ssh_key=yes shell={{item.shell}}
+  with_items: "{{os_users}}"
+
+- name: user files
+  copy: content={{item.1.content}} dest=/home/{{item.0.name}}/{{item.1.dest}} force=yes owner={{item.0.name}} group={{item.0.name}} mode={{item.1.mode}}
+  with_subelements:
+    - "{{os_users}}"
+    - "files"
+
+- name: os files
+  copy: content={{item.content}} dest={{item.dest}} force=yes mode={{item.mode}}
+  with_items: "{{os_files}}"
+

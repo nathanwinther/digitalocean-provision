@@ -1,0 +1,28 @@
+---
+
+- name: util
+
+  hosts: "{{playbook.hosts}}"
+  remote_user: "{{playbook.remote_user}}"
+  become: "{{playbook.become}}"
+  become_user: "{{playbook.become_user}}"
+  become_method: "{{playbook.become_method}}"
+
+  vars_files:
+    - shared_vars.yml
+
+  tasks:
+    - include: shared_playbook.yml
+
+    - name: git
+      apt: name=git state=latest
+
+    - name: mysql-client
+      apt: name=mysql-client state=latest
+
+    - name: screen
+      apt: name=screen state=latest
+
+    - name: vim
+      apt: name=vim state=latest
+

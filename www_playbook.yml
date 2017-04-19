@@ -1,0 +1,81 @@
+---
+
+- name: www
+
+  hosts: "{{playbook.hosts}}"
+  remote_user: "{{playbook.remote_user}}"
+  become: "{{playbook.become}}"
+  become_user: "{{playbook.become_user}}"
+  become_method: "{{playbook.become_method}}"
+
+  vars_files:
+    - shared_vars.yml
+
+  vars:
+    replace_php_fpm_display_errors: "display_errors = {{php_fpm_display_errors}}"
+
+  tasks:
+    - include: shared_playbook.yml
+
+    - name: nginx
+      apt: name=nginx state=latest
+
+    - name: sendfile off
+      replace: dest=/etc/nginx/nginx.conf regexp="sendfile\s*.*" replace="sendfile off;" backup=no
+      notify: nginx restart
+
+    - name: nginx cert directories
+      file: path="{{item.path | dirname}}" owner="{{item.owner}}" group="{{item.group}}" state=directory
+      with_items: "{{ssl_certificates}}"
+      notify: nginx restart
+
+    - name: nginx cert files
+      copy: content="{{item.content}}" dest="{{item.path}}" mode="{{item.mode}}" owner="{{item.owner}}" group="{{item.group}}" force=yes
+      with_items: "{{ssl_certificates}}"
+      notify: nginx restart
+
+    - name: nginx default
+      template: src=templates/www/etc/nginx/sites-available/default dest=/etc/nginx/sites-available/default force=yes
+      notify: nginx restart
+
+    - name: nginx www.nathanwinther.info.conf
+      template: src=templates/www/etc/nginx/sites-available/www.nathanwinther.info.conf dest=/etc/nginx/sites-available/www.nathanwinther.info.conf force=yes
+      notify: nginx restart
+
+    - name: nginx enable www.nathanwinther.info.conf
+      file: src=/etc/nginx/sites-available/www.nathanwinther.info.conf dest=/etc/nginx/sites-enabled/www.nathanwinther.info.conf state=link
+      notify: nginx restart
+
+    - name: nginx nathanwinther.info.conf
+      template: src=templates/www/etc/nginx/sites-available/nathanwinther.info.conf dest=/etc/nginx/sites-available/nathanwinther.info.conf force=yes
+      notify: nginx restart
+
+    - name: nginx enable nathanwinther.info.conf
+      file: src=/etc/nginx/sites-available/nathanwinther.info.conf dest=/etc/nginx/sites-enabled/nathanwinther.info.conf state=link
+      notify: nginx restart
+
+    - name: git
+      apt: name=git state=latest
+
+    - name: golang
+      apt: name=golang state=latest
+
+    - name: invoice init.d
+      template: src=templates/www/etc/init.d/invoice dest=/etc/init.d/invoice force=yes mode=0755
+
+    - name: aws credentials directory
+      file: path="{{aws_credentials.path | dirname}}" owner="{{aws_credentials.owner}}" group="{{aws_credentials.group}}" state=directory
+
+    - name: aws_credentials
+      copy: content="{{aws_credentials.content}}" dest="{{aws_credentials.path}}" mode="{{aws_credentials.mode}}" owner="{{aws_credentials.owner}}" group="{{aws_credentials.group}}" force=yes 
+
+    - name: deploy key directory
+      file: path="{{deploy_key.path | dirname}}" owner="{{deploy_key.owner}}" group="{{deploy_key.group}}" state=directory
+
+    - name: deploy key
+      copy: content="{{deploy_key.content}}" dest="{{deploy_key.path}}" mode="{{deploy_key.mode}}" owner="{{deploy_key.owner}}" group="{{deploy_key.group}}" force=yes 
+
+  handlers:
+    - name: nginx restart
+      service: name=nginx state=restarted enabled=yes
+
