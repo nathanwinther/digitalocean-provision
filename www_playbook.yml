@@ -75,7 +75,18 @@
     - name: deploy key
       copy: content="{{deploy_key.content}}" dest="{{deploy_key.path}}" mode="{{deploy_key.mode}}" owner="{{deploy_key.owner}}" group="{{deploy_key.group}}" force=yes 
 
+    - name: php
+      apt: name=php-fpm
+      notify: php7.0-fpm restart
+
+    - name: php-curl
+      apt: name=php-curl
+      notify: php7.0-fpm restart
+
   handlers:
     - name: nginx restart
       service: name=nginx state=restarted enabled=yes
+
+    - name: php7.0-fpm restart
+      service: name=php7.0-fpm state=restarted enabled=yes
 
